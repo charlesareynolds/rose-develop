@@ -55,6 +55,9 @@ GTAGS
 *.pyc
 *.pyo
 
+# PyCharm directory
+.idea/
+
 # /projects/compass/extensions/checkers/allocateAndFreeMemoryInTheSameModule/
 /projects/compass/extensions/checkers/allocateAndFreeMemoryInTheSameModule/allocateAndFreeMemoryInTheSameModuleAtTheSameLevelOfAbstraction.compass.external.makefile
 
