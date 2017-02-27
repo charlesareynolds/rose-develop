@@ -24,6 +24,7 @@ class Checker(object):
         self._define_args()
         self.dir_count = 0
         self.exception_count = 0
+        self.failed = False
         self.file_count = 0
         self.non_matching_count = 0
         self.path_count = 0
@@ -32,8 +33,9 @@ class Checker(object):
     def _define_args(self):
         parser = argparse.ArgumentParser(
             description='ROSE installation permission checker.  Checks that '
-            'group and others permissions match user permissions, except that '
-            'only the user should have write permission',
+            'Group and Others permissions match User permissions.  Optionally '
+            'checks that only the owner should have write permission. Returns'
+            '0 on success, 1 if any permission errors or exceptions are detected.',
             epilog='You only need to provide enough of each argument name to '
                    'make it unique. e.g. --i and --input_file are equivalent.  '
         )
@@ -57,13 +59,20 @@ class Checker(object):
     def run(self):
         self._process_args()
         self._do_check()
+        if self.failed:
+            return 1
+        else:
+            return 0
 
     def _process_args(self):
         self._args = self._parser.parse_args()
 
     def _do_check(self):
         """ Walks all subdirectories and files, checking each"""
-        print('Checking permissions for "%s"' % self._args.installation_path)
+        if self._args.count_only:
+            print('Would check permissions for "%s" (counting only)' % self._args.installation_path)
+        else:
+            print('Checking permissions for "%s"' % self._args.installation_path)
         if self._args.debug:
             print ('(Debug is on)')
         for root, dirs, files in os.walk(self._args.installation_path):
@@ -77,11 +86,20 @@ class Checker(object):
             if not self._args.count_only:
                 self._check_paths(root, dirs)
                 self._check_paths(root, files)
-        print('Checked %i files in %i directories' % (self.file_count, self.dir_count))
-        print('Found %i match errors' % self.non_matching_count)
-        if self._args.check_write:
-            print('Found %i write errors' % self.unwanted_write_count)
-        print('Got %i exceptions' % self.exception_count)
+        if self._args.count_only:
+            print('Would check %i files in %i directories' % (self.file_count, self.dir_count))
+        else:
+            print('Checked %i files in %i directories' % (self.file_count, self.dir_count))
+            if self.non_matching_count > 0:
+                self.failed = True
+            print('Found %i match errors' % self.non_matching_count)
+            if self._args.check_write:
+                if self.unwanted_write_count > 0:
+                    self.failed = True
+                print('Found %i write errors' % self.unwanted_write_count)
+            if self.exception_count > 0:
+                self.failed = True
+            print('Got %i exceptions' % self.exception_count)
 
     def _check_paths(self, root, names):
         for name in names:
@@ -144,4 +162,4 @@ class Checker(object):
 
 if __name__ == '__main__':
 
-    Checker().run()
+    exit(Checker().run())
