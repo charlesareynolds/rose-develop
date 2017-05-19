@@ -45,7 +45,7 @@ namespace rose {
  *
  *  See also, @ref isInitialized and @ref checkConfigToken. The @c ROSE_INITIALIZE C preprocessor-defined symbol expands to
  *  <code>rose::initialize(ROSE_CONFIG_TOKEN)</code> but might be easier to remember. */
-void initialize(const char *configToken);
+ROSE_DLL_API void initialize(const char *configToken);
 
 /** Checks whether the library has been initialized.
  *
@@ -54,16 +54,29 @@ void initialize(const char *configToken);
  *  that the notion of "when some other thread is initializing the library" is defined as beginning when that other thread
  *  enters the initialization critical section and ends when it leaves the critical section, which doesn't coincide exactly
  *  with the call to and return from @ref initialize. */
-bool isInitialized();
+ROSE_DLL_API bool isInitialized();
 
 /** Check the configuration token.
  *
  *  This function checks the supplied configuration token against the token compiled into the library and returns true if they
  *  match and false if they don't.  See @ref initialize. */
-bool checkConfigToken(const char *configTokenToken);
+ROSE_DLL_API bool checkConfigToken(const char *configTokenToken);
 
 } // namespace
 
+/** Check ROSE version number.
+ *
+ *  Checks that the ROSE library version number is equal to or greater than the specified version string.  Both version numbers
+ *  are split at the "." characters and each part of the library version number is compared with the corresponding part of the
+ *  @p need version number from left to right until an inequality is found. If the unequal library part is greater than the
+ *  corresponding @p need part, then this function fails (returns false), otherwise it succeeds. Comparisons are lexicographic,
+ *  not numeric. If no inequality is found among the corresponding pairs, then this function returns true even if the version
+ *  numbers have different numbers of parts.
+ *
+ *  For example, if the library version number is "1.2.3", this function returns true when @p need is "", "1", "1.0", "1.1",
+ *  "1.2.0", "1.2.1", "1.2.2", "1.2.3", "1.2.3.0", "1.2.3.1", etc., and it returns false when @p need is "2", "1.3", "1.2.4",
+ *  "1.2.4.0", etc. */
+bool checkVersionNumber(const std::string &need);
 
 // A slightly more memorable way to initialize ROSE
 #define ROSE_INITIALIZE rose::initialize(ROSE_CONFIG_TOKEN)

@@ -6,6 +6,7 @@ include $(top_srcdir)/config/Makefile.for.ROSE.includes.and.libs
 
 # AM_CPPFLAGS = $(ROSE_INCLUDES) -I$(srcdir)/../colorAST_tests
 AM_CPPFLAGS = $(ROSE_INCLUDES)
+AM_LDFLAGS = $(ROSE_RPATHS)
 
 # This is a shorted list that tests more quickly.
 TESTCODES_REQUIRED_TO_PASS = \
@@ -121,10 +122,19 @@ TESTCODES_REQUIRED_TO_PASS += \
      mergeTest_04.C \
      mergeTest_05.C 
 
+# DQ (4/9/2017): This appears to be a problem for GNU 4.8 using EDG 4.9.
+if !ROSE_USE_EDG_VERSION_4_9
 # DQ (2/26/2017): This is a file that fails for GNU 5.1 and later versions.
 if !ROSE_USING_GCC_VERSION_LATER_5_1
 TESTCODES_REQUIRED_TO_PASS += \
      mergeTest_111.C 
+endif
+else
+# DQ (4/9/2017): Older compiler versions appear to be fine.
+if !ROSE_USING_GCC_VERSION_LATER_4_8
+TESTCODES_REQUIRED_TO_PASS += \
+     mergeTest_111.C 
+endif
 endif
 endif
 
@@ -196,7 +206,7 @@ TESTCODES_CURRENTLY_FAILING = \
 bin_PROGRAMS = testMerge
 testMerge_SOURCES = testMerge.C
 
-LDADD = $(LIBS_WITH_RPATH) $(ROSE_SEPARATE_LIBS)
+LDADD = $(ROSE_SEPARATE_LIBS)
 
 testMerge_single: testMerge
 	./testMerge -c $(srcdir)/inputCode_merge.C
@@ -332,7 +342,8 @@ if USING_CLANG_COMPILER
 # Exclude this list of files in the case of CLANG compiler.
 	@echo "USING_CLANG_COMPILER == true"
 	@echo "C++11 tests using EDG 4.9: Clang backend compiler using EDG 4.12 frontend."
-	@$(MAKE) $(PASSING_TEST_Objects)
+# DQ (2/28/2017): Skip these files with Clang for now and come back to them later (when we understand the limits of portability better).
+#	@$(MAKE) $(PASSING_TEST_Objects)
 else # NOT USING_CLANG_COMPILER
 	@echo "USING_CLANG_COMPILER == false"
 if USING_INTEL_COMPILER

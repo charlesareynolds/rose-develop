@@ -163,13 +163,13 @@ class TransferFunction {
     BaseSemantics::DispatcherPtr cpu_;
     BaseSemantics::SValuePtr callRetAdjustment_;
     const RegisterDescriptor STACK_POINTER_REG;
-    const CallingConvention::Definition *defaultCallingConvention_;
+    CallingConvention::DefinitionPtr defaultCallingConvention_;
 public:
     /** Construct from a CPU.
      *
      *  Constructs a new transfer function using the specified @p cpu. */
     explicit TransferFunction(const BaseSemantics::DispatcherPtr &cpu)
-        : cpu_(cpu), STACK_POINTER_REG(cpu->stackPointerRegister()), defaultCallingConvention_(NULL) {
+        : cpu_(cpu), STACK_POINTER_REG(cpu->stackPointerRegister()) {
         size_t adjustment = STACK_POINTER_REG.get_nbits() / 8; // sizeof return address on top of stack
         callRetAdjustment_ = cpu->number_(STACK_POINTER_REG.get_nbits(), adjustment);
     }
@@ -190,15 +190,13 @@ public:
      *  the convention of non-analyzed functions.
      *
      * @{ */
-    const CallingConvention::Definition* defaultCallingConvention() const { return defaultCallingConvention_; }
-    void defaultCallingConvention(const CallingConvention::Definition *x) { defaultCallingConvention_ = x; }
+    CallingConvention::DefinitionPtr defaultCallingConvention() const { return defaultCallingConvention_; }
+    void defaultCallingConvention(const CallingConvention::DefinitionPtr &x) { defaultCallingConvention_ = x; }
     /** @} */
 
-    // Required by data-flow engine: should return a deep copy of the state
-    BaseSemantics::StatePtr operator()(const BaseSemantics::StatePtr &incomingState) const {
-        return incomingState ? incomingState->clone() : BaseSemantics::StatePtr();
-    }
-
+    // Required by data-flow engine
+    std::string printState(const BaseSemantics::StatePtr &state);
+    
     // Required by data-flow engine: compute new output state given a vertex and input state.
     BaseSemantics::StatePtr operator()(const DfCfg&, size_t vertexId, const BaseSemantics::StatePtr &incomingState) const;
 };

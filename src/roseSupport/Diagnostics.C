@@ -5,31 +5,39 @@
 
 #ifdef ROSE_BUILD_BINARY_ANALYSIS_SUPPORT
 #include "AsmUnparser.h"                                // rose::BinaryAnalysis::AsmUnparser
-#include "BaseSemantics2.h"                             // rose::BinaryAnalysis::InstructionSemantics2
 #include "BinaryBestMapAddress.h"                       // rose::BinaryAnalysis::BestMapAddress
-#include "BinaryCallingConvention.h"                    // rose::BinaryAnalysis::CallingConvention
 #include "BinaryDataFlow.h"                             // rose::BinaryAnalysis::DataFlow
 #include "BinaryFeasiblePath.h"                         // rose::BinaryAnalysis::FeasiblePath
 #include "BinaryFunctionSimilarity.h"                   // rose::BinaryAnalysis::FunctionSimilarity
-#include "BinaryLoader.h"                               // BinaryLoader
+#include "BinaryLoader.h"                               // rose::BinaryAnalysis::BinaryLoader
 #include "BinaryNoOperation.h"                          // rose::BinaryAnalysis::NoOperation
-#include "BinaryPointerDetection.h"                     // rose::BinaryAnalysis::PointerDetection
-#include "BinaryStackDelta.h"                           // rose::BinaryAnalysis::StackDelta
-#include "BinaryString.h"                               // rose::BinaryAnalysis::String
 #include "BinaryTaintedFlow.h"                          // rose::BinaryAnalysis::TaintedFlow
 #include "Disassembler.h"                               // rose::BinaryAnalysis::Disassembler
-#include "Partitioner.h"                                // rose::BinaryAnalysis::Partitioner
-#include <Partitioner2/Utility.h>                       // rose::BinaryAnalysis::Partitioner2
+
+namespace rose {
+namespace BinaryAnalysis {
+    namespace CallingConvention { void initDiagnostics(); }
+    namespace InstructionSemantics2 { void initDiagnostics(); }
+    namespace Partitioner2 { void initDiagnostics(); }
+    namespace PointerDetection { void initDiagnostics(); }
+    namespace ReturnValueUsed { void initDiagnostics(); }
+    namespace StackDelta { void initDiagnostics(); }
+    namespace Strings { void initDiagnostics(); }
+} // namespace
+} // namespace
 #endif
 
 #include "Diagnostics.h"                                // rose::Diagnostics
 #include <EditDistance/EditDistance.h>                  // rose::EditDistance
 
 // DQ (3/24/2016): Adding support for EDG/ROSE frontend message logging.
+#ifndef ROSE_USE_CLANG_FRONTEND
+// DQ (2/5/2017): This is only used with the EDG frontend, not for use when configured to use Clang.
 namespace EDG_ROSE_Translation
    {
      void initDiagnostics();
    }
+#endif
 
 // DQ (3/24/2016): Adding support for AstDiagnostics / AstConsistancy tests message logging.
 #include "AstDiagnostics.h"
@@ -97,7 +105,7 @@ void initialize() {
         // point to the rose::Diagnostics::destination that we set above.  Generally speaking, if a frontend language is
         // disabled there should be a dummy initDiagnostics that does nothing so we don't need lots of #ifdefs here.
 #ifdef ROSE_BUILD_BINARY_ANALYSIS_SUPPORT
-        BinaryLoader::initDiagnostics();
+        BinaryAnalysis::BinaryLoader::initDiagnostics();
         BinaryAnalysis::AsmUnparser::initDiagnostics();
         BinaryAnalysis::BestMapAddress::initDiagnostics();
         BinaryAnalysis::CallingConvention::initDiagnostics();
@@ -108,8 +116,8 @@ void initialize() {
         BinaryAnalysis::InstructionSemantics2::initDiagnostics();
         BinaryAnalysis::NoOperation::initDiagnostics();
         BinaryAnalysis::Partitioner2::initDiagnostics();
-        BinaryAnalysis::Partitioner::initDiagnostics();
         BinaryAnalysis::PointerDetection::initDiagnostics();
+        BinaryAnalysis::ReturnValueUsed::initDiagnostics();
         BinaryAnalysis::StackDelta::initDiagnostics();
         BinaryAnalysis::Strings::initDiagnostics();
         BinaryAnalysis::TaintedFlow::initDiagnostics();
@@ -117,7 +125,10 @@ void initialize() {
 #endif
         EditDistance::initDiagnostics();
 #ifdef ROSE_BUILD_CXX_LANGUAGE_SUPPORT
+#ifndef ROSE_USE_CLANG_FRONTEND
+     // DQ (2/5/2017): This is only used with the EDG frontend, not for use when configured to use Clang.
         EDG_ROSE_Translation::initDiagnostics();
+#endif
 #endif
         TestChildPointersInMemoryPool::initDiagnostics();
         FixupAstSymbolTablesToSupportAliasedSymbols::initDiagnostics();
@@ -125,6 +136,11 @@ void initialize() {
         NameQualificationTraversal::initDiagnostics();
         UnparseLanguageIndependentConstructs::initDiagnostics();
         SageBuilder::initDiagnostics();
+
+#if 1
+     // DQ (3/5/2017): Adding message stream to support diagnostic message from the ROSE IR nodes.
+        rose::initDiagnostics();
+#endif
     }
 }
 

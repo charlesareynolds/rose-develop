@@ -122,7 +122,7 @@ CommandlineProcessing::genericSwitches() {
 #if defined(ROSE_PACKAGE_VERSION)
                .action(showVersionAndExit(ROSE_PACKAGE_VERSION, 0))
 #elif defined(PACKAGE_VERSION)
-               .action(showVersionAndExit(ROSE_PACKAGE_VERSION, 0))
+               .action(showVersionAndExit(PACKAGE_VERSION, 0))
 #else
                .action(showVersionAndExit("unknown", 0))
 #endif
@@ -587,7 +587,7 @@ CommandlineProcessing::addListToCommandLine ( vector<string> & argv , string pre
 #if 0
      printf ("In addListToCommandLine(): prefix = %s \n",prefix.c_str());
 #endif
-     bool outputPrefix = false;
+  // bool outputPrefix = false;
   // for (unsigned int i = 0; i < argList.size(); ++i) 
      for (size_t i = 0; i < argList.size(); ++i) 
         {

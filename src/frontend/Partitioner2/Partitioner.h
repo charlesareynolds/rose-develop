@@ -306,7 +306,7 @@ private:
     BasePartitionerSettings settings_;                  // settings adjustable from the command-line
     Configuration config_;                              // configuration information about functions, blocks, etc.
     InstructionProvider::Ptr instructionProvider_;      // cache for all disassembled instructions
-    MemoryMap memoryMap_;                               // description of memory, especially insns and non-writable
+    MemoryMap::Ptr memoryMap_;                          // description of memory, especially insns and non-writable
     ControlFlowGraph cfg_;                              // basic blocks that will become part of the ROSE AST
     CfgVertexIndex vertexIndex_;                        // Vertex-by-address index for the CFG
     AddressUsageMap aum_;                               // How addresses are used for each address represented by the CFG
@@ -420,7 +420,7 @@ public:
      *
      *  The partitioner must be provided with a disassembler, which also determines the specimen's target architecture, and a
      *  memory map that represents a (partially) loaded instance of the specimen (i.e., a process). */
-    Partitioner(Disassembler *disassembler, const MemoryMap &map);
+    Partitioner(Disassembler *disassembler, const MemoryMap::Ptr &map);
 
     // FIXME[Robb P. Matzke 2014-11-08]: This is not ready for use yet.  The problem is that because of the shallow copy, both
     // partitioners are pointing to the same basic blocks, data blocks, and functions.  This is okay by itself since these
@@ -464,13 +464,12 @@ public:
      *  memory anymore.
      *
      *  @{ */
-    const MemoryMap& memoryMap() const /*final*/ { return memoryMap_; }
-    MemoryMap& memoryMap() /*final*/ { return memoryMap_; }
+    MemoryMap::Ptr memoryMap() const /*final*/ { return memoryMap_; }
     /** @} */
 
     /** Returns true if address is executable. */
     bool addressIsExecutable(rose_addr_t va) const /*final*/ {
-        return memoryMap_.at(va).require(MemoryMap::EXECUTABLE).exists();
+        return memoryMap_!=NULL && memoryMap_->at(va).require(MemoryMap::EXECUTABLE).exists();
     }
 
     /** Returns an unparser.
@@ -1694,7 +1693,9 @@ public:
      *  Analyses a function to determine characteristics of its calling convention, such as which registers are callee-saved,
      *  which registers and stack locations are input parameters, and which are output parameters.   The calling convention
      *  analysis itself does not define the entire calling convention--instead, the analysis results must be matched against a
-     *  dictionary of calling convention definitions.
+     *  dictionary of calling convention definitions. Each function has a @ref Function::callingConventionDefinition
+     *  "callingConventionDefinition" property that points to the best definition; if this method reanalyzes the calling
+     *  convention then the definition is reset to the null pointer.
      *
      *  Since this analysis is based on data-flow, which is based on a control flow graph, the function must be attached to the
      *  CFG/AUM and all its basic blocks must also exist in the CFG/AUM.
@@ -1711,8 +1712,24 @@ public:
      *
      *  See also, @ref allFunctionCallingConvention, which computes calling convention characteristics for all functions at
      *  once, and @ref functionCallingConventionDefinitions, which returns matching definitions. */
-    const CallingConvention::Analysis& functionCallingConvention(const Function::Ptr&,
-                                                                 const CallingConvention::Definition *dflt=NULL) const /*final*/;
+    const CallingConvention::Analysis&
+    functionCallingConvention(const Function::Ptr&,
+                              const CallingConvention::Definition::Ptr &dflt = CallingConvention::Definition::Ptr())
+        const /*final*/;
+
+    /** Compute calling conventions for all functions.
+     *
+     *  Analyzes calling conventions for all functions and caches results in the function objects. The analysis uses a depth
+     *  first traversal of the call graph, invoking the analysis as the traversal unwinds. This increases the chance that the
+     *  calling conventions of callees are known before their callers are analyzed. However, this analysis must break cycles in
+     *  mutually recursive calls, and does so by using an optional default calling convention where the cycle is broken. This
+     *  default is not inserted as a result--it only influences the data-flow portion of the analysis.
+     *
+     *  After this method runs, results can be queried per function with either @ref Function::callingConventionAnalysis or
+     *  @ref functionCallingConvention. */
+    void
+    allFunctionCallingConvention(const CallingConvention::Definition::Ptr &dflt = CallingConvention::Definition::Ptr())
+        const /*final*/;
 
     /** Return list of matching calling conventions.
      *
@@ -1732,25 +1749,29 @@ public:
      *  been analyzed yet.
      *
      *  If the calling convention analysis fails or no common architecture calling convention definition matches the
-     *  characteristics of the function, then an empty list is returned.
+     *  characteristics of the function, then an empty list is returned.  This method does not access the function's calling
+     *  convention property -- it recomputes the list of matching definitions from scratch.
      *
      *  See also, @ref functionCallingConvention, which returns the calling convention characteristics of a function (rather
      *  than definitions), and @ref allFunctionCallingConvention, which runs that analysis over all functions. */
     CallingConvention::Dictionary
     functionCallingConventionDefinitions(const Function::Ptr&,
-                                         const CallingConvention::Definition *dflt=NULL) const /*final*/;
+                                         const CallingConvention::Definition::Ptr &dflt = CallingConvention::Definition::Ptr())
+        const /*final*/;
 
-    /** Compute calling conventions for all functions.
+    /** Analyzes calling conventions and saves results.
      *
-     *  Analyzes calling conventions for all functions and caches results in the function objects. The analysis uses a depth
-     *  first traversal of the call graph, invoking the analysis as the traversal unwinds. This increases the chance that the
-     *  calling conventions of callees are known before their callers are analyzed. However, this analysis must break cycles in
-     *  mutually recursive calls, and does so by using an optional default calling convention where the cycle is broken. This
-     *  default is not inserted as a result--it only influences the data-flow portion of the analysis.
+     *  This method invokes @ref allFunctionCallingConvention to analyze the behavior of every function, then finds the list of
+     *  matching definitions for each function. A histogram of definitions is calculated and each function is re-examined. If
+     *  any function matched more than one definition, then the most frequent of those definitions is chosen as that function's
+     *  "best" calling convention definition and saved in the @ref Function::callingConventionDefinition property.
      *
-     *  After this method runs, results can be queried per function with either @ref Function::callingConventionAnalysis or
-     *  @ref functionCallingConvention. */
-    void allFunctionCallingConvention(const CallingConvention::Definition *dflt=NULL) const /*final*/;
+     *  If a default calling convention definition is provided, it gets passed to the @ref allFunctionCallingConvention
+     *  analysis. The default is also assigned as the @ref Function::callingConventionDefinition property of any function for
+     *  which calling convention analysis fails. */
+    void
+    allFunctionCallingConventionDefinition(const CallingConvention::Definition::Ptr &dflt =
+                                           CallingConvention::Definition::Ptr()) const /*final*/;
 
     /** Adjust inter-function edge types.
      *
@@ -2072,9 +2093,14 @@ public:
     /** Obtain new RiscOperators.
      *
      *  Creates a new instruction semantics infrastructure with a fresh machine state.  The partitioner supports two kinds of
-     *  memory state representations: list-based and map-based (see @ref semanticMemoryParadigm).  Returns a null pointer if
-     *  the architecture does not support semantics. */
+     *  memory state representations: list-based and map-based (see @ref semanticMemoryParadigm). If the memory paradigm is not
+     *  specified then the partitioner's default paradigm is used. Returns a null pointer if the architecture does not support
+     *  semantics.
+     *
+     * @{ */
     BaseSemantics::RiscOperatorsPtr newOperators() const /*final*/;
+    BaseSemantics::RiscOperatorsPtr newOperators(SemanticMemoryParadigm) const /*final*/;
+    /** @} */
 
     /** Obtain a new instruction semantics dispatcher.
      *
@@ -2094,7 +2120,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 private:
-    void init(Disassembler*, const MemoryMap&);
+    void init(Disassembler*, const MemoryMap::Ptr&);
     void init(const Partitioner&);
     void reportProgress() const;
 

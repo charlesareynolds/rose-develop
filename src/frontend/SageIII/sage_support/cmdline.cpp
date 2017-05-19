@@ -1448,10 +1448,14 @@ SgProject::processCommandLine(const vector<string>& input_argv)
                   bool is_directory = boost::filesystem::is_directory(include_path_no_quotes);
                   if (false == is_directory)
                   {
-                      std::cout  << "[WARN] "
+                 // DQ (3/15/2017): Fixed to use mlog message logging.
+                    if (rose::ir_node_mlog[rose::Diagnostics::DEBUG])
+                       {
+                         std::cout  << "[WARN] "
                               << "Invalid argument to -I; path does not exist: "
                               << "'" << include_path_no_quotes << "'"
                               << std::endl;
+                       }
                   }
               } catch (const boost::filesystem::filesystem_error& ex) {
                   std::cout  << "[ERROR] "
@@ -1573,10 +1577,14 @@ NormalizeIncludePathOptions (std::vector<std::string>& argv)
           bool is_directory = boost::filesystem::is_directory(arg);
           if (false == is_directory)
           {
-              std::cout  << "[WARN] "
+          // DQ (3/15/2017): Fixed to use mlog message logging.
+             if (rose::ir_node_mlog[rose::Diagnostics::DEBUG])
+                {
+                  std::cout  << "[WARN] "
                         << "Invalid argument to -I; path does not exist: "
                         << "'" << arg << "'"
                         << std::endl;
+                }
           }
 #ifdef _MSC_VER
           // ensure that the path is quoted on Windows.
@@ -2465,6 +2473,9 @@ ProcessSource (SgProject* project, std::vector<std::string>& argv)
           "source",
           source,
           Cmdline::REMOVE_OPTION_FROM_ARGV);
+
+// DQ (3/25/2017): Eliminate warning of unused variable via a trivial use.
+   ROSE_ASSERT(has_java_source == true || has_java_source == false);
 
   // Default
   //if (has_java_source == false)
@@ -4499,33 +4510,37 @@ SgFile::processRoseCommandLineOptions ( vector<string> & argv )
         }
        else
         {
-       // This is the case of a C++ file.
-
-       // DQ (2/21/2017): If C++14 was not specified explicitly then let the default be C++11 for this compiler.
-          if (get_Cxx14_only() == false && get_Cxx14_gnu_only() == false)
+       // DQ (3/17/2017): This could be a fortran file and we don't want to blindly turn on C++11 mode.
+          if (get_Cxx_only() == true)
              {
-               set_Cxx11_only(true);
-               set_Cxx11_gnu_only(false);
+            // This is the case of a C++ file.
+
+            // DQ (2/21/2017): If C++14 was not specified explicitly then let the default be C++11 for this compiler.
+               if (get_Cxx14_only() == false && get_Cxx14_gnu_only() == false)
+                  {
+                    set_Cxx11_only(true);
+                    set_Cxx11_gnu_only(false);
+                  }
+            // Set gnu specific level of C99 support to false.
+            // set_Cxx11_gnu_only(false);
+
+            // DQ (7/31/2013): If we turn on C99, then turn off C89.
+               set_C89_only(false);
+               set_C89_gnu_only(false);
+               set_C99_only(false);
+               set_C99_gnu_only(false);
+               set_C11_only(false);
+               set_C11_gnu_only(false);
+
+               ROSE_ASSERT(get_C_only() == false);
+
+            // DQ (2/1/2015): I think that explicit specificiation of C mode should turn off C mode!
+            // set_C_only(false);
+
+            // DQ (2/21/2017): Modified this assertion.
+            // ROSE_ASSERT(get_Cxx11_only() == true);
+               ROSE_ASSERT(get_Cxx11_only() == true || get_Cxx14_only() == true);
              }
-       // Set gnu specific level of C99 support to false.
-       // set_Cxx11_gnu_only(false);
-
-       // DQ (7/31/2013): If we turn on C99, then turn off C89.
-          set_C89_only(false);
-          set_C89_gnu_only(false);
-          set_C99_only(false);
-          set_C99_gnu_only(false);
-          set_C11_only(false);
-          set_C11_gnu_only(false);
-
-          ROSE_ASSERT(get_C_only() == false);
-
-       // DQ (2/1/2015): I think that explicit specificiation of C mode should turn off C mode!
-       // set_C_only(false);
-
-       // DQ (2/21/2017): Modified this assertion.
-       // ROSE_ASSERT(get_Cxx11_only() == true);
-          ROSE_ASSERT(get_Cxx11_only() == true || get_Cxx14_only() == true);
         }
 #endif
 
@@ -4538,8 +4553,12 @@ SgFile::processRoseCommandLineOptions ( vector<string> & argv )
         }
        else
         {
-       // printf ("For Clang as the backend compiler the default C++ mode is C++11 \n");
-          set_Cxx11_only(true);
+       // DQ (3/17/2017): This could be a fortran file and we don't want to blindly turn on C++11 mode.
+          if (get_Cxx_only() == true)
+             {
+            // printf ("For Clang as the backend compiler the default C++ mode is C++11 \n");
+               set_Cxx11_only(true);
+             }
         }
 #endif
 
@@ -5244,45 +5263,6 @@ SgFile::processRoseCommandLineOptions ( vector<string> & argv )
        // printf ("option -rose:skip_unparse_asm_commands found \n");
           set_skip_unparse_asm_commands(true);
         }
-
-  // RPM (12/29/2009): Disassembler aggressiveness.
-     if (CommandlineProcessing::isOptionWithParameter(argv, "-rose:", "disassembler_search", stringParameter, true)) {
-#ifdef ROSE_BUILD_BINARY_ANALYSIS_SUPPORT
-         try {
-             unsigned heuristics = get_disassemblerSearchHeuristics();
-             heuristics = rose::BinaryAnalysis::Disassembler::parse_switches(stringParameter, heuristics);
-             set_disassemblerSearchHeuristics(heuristics);
-         } catch(const rose::BinaryAnalysis::Disassembler::Exception &e) {
-             fprintf(stderr, "%s in \"-rose:disassembler_search\" switch\n", e.what());
-             ROSE_ASSERT(!"error parsing -rose:disassembler_search");
-         }
-#else
-         printf ("Binary analysis not supported in this distribution (turned off in this restricted distribution) \n");
-         ROSE_ASSERT(false);
-#endif
-     }
-
-  // RPM (1/4/2010): Partitioner function search methods
-     if (CommandlineProcessing::isOptionWithParameter(argv, "-rose:", "partitioner_search", stringParameter, true)) {
-#ifdef ROSE_BUILD_BINARY_ANALYSIS_SUPPORT
-         try {
-             unsigned heuristics = get_partitionerSearchHeuristics();
-             heuristics = rose::BinaryAnalysis::Partitioner::parse_switches(stringParameter, heuristics);
-             set_partitionerSearchHeuristics(heuristics);
-         } catch(const std::string &e) {
-             fprintf(stderr, "%s in \"-rose:partitioner_search\" switch\n", e.c_str());
-             ROSE_ASSERT(!"error parsing -rose:partitioner_search");
-         }
-#else
-         printf ("Binary analysis not supported in this distribution (turned off in this restricted distribution) \n");
-         ROSE_ASSERT(false);
-#endif
-     }
-
-  // RPM (6/9/2010): Partitioner configuration
-     if (CommandlineProcessing::isOptionWithParameter(argv, "-rose:", "partitioner_config", stringParameter, true)) {
-         set_partitionerConfigurationFileName(stringParameter);
-     }
 
   // DQ (6/7/2013): Added support for alternatively calling the experimental fortran frontend.
      set_experimental_fortran_frontend(false);
@@ -6329,11 +6309,14 @@ SgFile::build_EDG_CommandLine ( vector<string> & inputCommandLine, vector<string
 #if 0
   // DQ (8/18/2014): Supress this output, I think we do want to include the rose_edg_required_macros_and_functions.h 
   // (but we might want to use it to specify different or additional builtin functions in the future).
-     printf ("Note for advance microsoft windows support using MSVC: Not clear if we need a specific --preinclude rose_edg_required_macros_and_functions.h for windows \n");
+     printf ("Note for advanced microsoft windows support using MSVC: Not clear if we need a specific --preinclude rose_edg_required_macros_and_functions.h for windows \n");
 #endif
   // commandLine.insert(commandLine.end(), configDefs.begin(), configDefs.end());
      commandLine.push_back("--preinclude");
      commandLine.push_back("rose_edg_required_macros_and_functions.h");
+
+  // DQ (4/23/2017): Add something to permit use to detect when Microsoft extensions are being supported.
+     commandLine.push_back("-DROSE_USE_MICROSOFT_EXTENSIONS");
 #endif
 
   // DQ (5/24/2015): Adding support for specification of optimization to trigger use of __OPTIMIZE__ macro (required for compatability with GNU gcc API).
@@ -7195,6 +7178,29 @@ SgFile::build_EDG_CommandLine ( vector<string> & inputCommandLine, vector<string
   // Note: this is where options such as "--no_warnings --restrict" are added.
      CommandlineProcessing::addListToCommandLine(inputCommandLine,"--",edgOptionList);
 
+
+  // DQ (3/6/2017): Adding support to read the ROSE options data structure to trigger suppression of warnings.
+  // printf ("In build_EDG_CommandLine(): get_output_warnings() = %s \n",get_output_warnings() ? "true" : "false");
+     if (rose::global_options.get_frontend_warnings())
+        {
+       // The EDG default is to output warnings (so we need not do anything to adjust the command line).
+          set_output_warnings(true);
+        }
+       else
+        {
+       // Turn off all warnings.
+          inputCommandLine.push_back("--no_warnings");
+        }
+
+#if 0
+     std::string tmp0_argString = CommandlineProcessing::generateStringFromArgList(inputCommandLine,false,false);
+     printf ("In build_EDG_CommandLine(): Input Command Line Arguments: \n%s \n",tmp0_argString.c_str());
+
+     printf ("Exiting as a test! \n");
+     ROSE_ASSERT(false);
+#endif
+
+
   // DQ (7/3/2013): Where are we in the command line.
   // inputCommandLine.push_back("--DDD");
 
@@ -7781,21 +7787,45 @@ SgFile::buildCompilerCommandLineOptions ( vector<string> & argv, int fileNameInd
   // printf ("compilerName       = %s \n",compilerName);
   // printf ("compilerNameString = %s \n",compilerNameString.c_str());
 
+  // DQ (3/15/2017): This is the wrong way to handl this since the compiler name can be anything.
+  // Note: ROSE Matrix Testing using "icpc-16.03" instead of "icpc" (and so was a problem for this code below).
   // tps (28 Aug 2008) : changed this so it does not pick up mpicc for icc
-     string name = StringUtility::stripPathFromFileName(compilerNameString[0]);
-     //     if (compilerNameString[0].find("icc") != string::npos)
-     if (name == "icc")
-        {
+  // string name = StringUtility::stripPathFromFileName(compilerNameString[0]);
+  // if (name == "icc")
+  //    {
        // This is the Intel C compiler: icc, we need to add the -restrict option
-          compilerNameString.push_back("-restrict");
-        }
+  //      compilerNameString.push_back("-restrict");
+  //    }
 
-     //     if (compilerNameString[0].find("icpc") != string::npos)
-     if (name == "icpc")
-        {
+  // if (name == "icpc")
+  //    {
        // This is the Intel C++ compiler: icc, we need to add the -restrict option
+  //      compilerNameString.push_back("-restrict");
+  //    }
+
+  // DQ (3/15/2017): This is the correct way to handle compiler vendor specific details within ROSE.
+#if defined(BACKEND_CXX_IS_GNU_COMPILER)
+  // Nothing is required for restrict pointer handling on the GNU compiler command line.
+#endif
+#if defined(BACKEND_CXX_IS_CLANG_COMPILER)
+  // Nothing is required for restrict pointer handling on the Clang compiler command line.
+#endif
+#if defined(BACKEND_CXX_IS_INTEL_COMPILER)
+  // DQ (3/16/2017): Only turn this on for C and C++ modes (not for Fortran (or anything else).
+  // DQ (3/15/2017): The intel compiler requires the use of the "-restrict" option to support the "restrict" keyword.
+     if (get_C_only() == true || get_Cxx_only() == true)
+        {
           compilerNameString.push_back("-restrict");
         }
+       else
+        {
+       // DQ (3/17/2017): It was a problem that C++11 was turned on for Fortran when using the Intel and Clang compilers (this code checks this).
+          ROSE_ASSERT(get_C11_only() == false);
+          ROSE_ASSERT(get_C14_only() == false);
+          ROSE_ASSERT(get_Cxx11_only() == false);
+          ROSE_ASSERT(get_Cxx14_only() == false);
+        }
+#endif
 
   // DQ (9/24/2006): Not clear if we want this, if we just skip stripping it out then it will be passed to the backend directly!
   // But we have to add it in the case of "-rose:strict", so we have to add it uniformally and strip it from the input.
@@ -7950,6 +7980,38 @@ SgFile::buildCompilerCommandLineOptions ( vector<string> & argv, int fileNameInd
 #if DEBUG_COMPILER_COMMAND_LINE
      printf ("In buildCompilerCommandLineOptions: After removing source file name: argcArgvList.size() = %" PRIuPTR " argcArgvList = %s \n",argcArgvList.size(),StringUtility::listToString(argcArgvList).c_str());
   // ROSE_ASSERT(false);
+#endif
+
+  // DQ (3/6/2017): Adding support to read the ROSE options data structure to trigger suppression of warnings.
+  // printf ("In build_EDG_CommandLine(): get_output_warnings() = %s \n",get_output_warnings() ? "true" : "false");
+     if (rose::global_options.get_backend_warnings())
+        {
+       // The EDG default is to output warnings (so we need not do anything to adjust the command line).
+       // set_output_warnings(true);
+        }
+       else
+        {
+       // Turn off all warnings.
+
+       // DQ (3/7/2017): Avoid use of "-w" on X10 compiler.
+          if (get_X10_only() == false)
+             {
+            // This is a portable way to turn off warnings in the backend compilers (GNU, Intel, Clang).
+               argcArgvList.push_back("-w");
+             }
+            else
+             {
+            // X10 command line generation using "-w" will cause X10 compiler to fail.
+             }
+        }
+
+#if 0
+     printf ("In buildCompilerCommandLineOptions(): After adding options from rose::global_options: argcArgvList.size() = %" PRIuPTR " argcArgvList = %s \n",
+          argcArgvList.size(),StringUtility::listToString(argcArgvList).c_str());
+#endif
+#if 0
+     printf ("Exitng as a test! \n");
+     ROSE_ASSERT(false);
 #endif
 
      bool  objectNameSpecified = false;

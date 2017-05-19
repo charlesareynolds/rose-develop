@@ -1289,6 +1289,8 @@ Unparse_ExprStmt::unparseLanguageSpecificStatement(SgStatement* stmt, SgUnparse_
 
 #if 0
      curprint ( string("\n/* Top of unparseLanguageSpecificStatement (Unparse_ExprStmt) " ) + stmt->class_name() + " */\n ");
+#endif
+#if 0
      ROSE_ASSERT(stmt->get_startOfConstruct() != NULL);
   // ROSE_ASSERT(stmt->getAttachedPreprocessingInfo() != NULL);
      int numberOfComments = -1;
@@ -2070,7 +2072,7 @@ Unparse_ExprStmt::unparseUsingDeclarationStatement (SgStatement* stmt, SgUnparse
                     SgTemplateDeclaration* templateDeclaration = isSgTemplateDeclaration(declarationStatement);
                     ROSE_ASSERT(templateDeclaration != NULL);
                     SgName templateName = templateDeclaration->get_name();
-                    curprint ( templateName.str());
+                    curprint (templateName.str());
                     break;
                   }
 
@@ -2080,7 +2082,17 @@ Unparse_ExprStmt::unparseUsingDeclarationStatement (SgStatement* stmt, SgUnparse
                     SgEnumDeclaration* enumDeclaration = isSgEnumDeclaration(declarationStatement);
                     ROSE_ASSERT(enumDeclaration != NULL);
                     SgName enumName = enumDeclaration->get_name();
-                    curprint ( enumName.str());
+                    curprint (enumName.str());
+                    break;
+                  }
+
+            // DQ (3/8/2017): Added support for SgTemplateTypedefDeclaration IR nodes in using declaration (Cxx11_tests/test20017_03.C).
+               case V_SgTemplateTypedefDeclaration:
+                  {
+                    SgTemplateTypedefDeclaration* templateTypedefDeclaration = isSgTemplateTypedefDeclaration(declarationStatement);
+                    ROSE_ASSERT(templateTypedefDeclaration != NULL);
+                    SgName name = templateTypedefDeclaration->get_name();
+                    curprint (name.str());
                     break;
                   }
 
@@ -6086,7 +6098,8 @@ Unparse_ExprStmt::unparseVarDeclStmt(SgStatement* stmt, SgUnparse_Info& info)
              }
             else
              {
-               printf ("Warning: TransformationSupport::getFile(vardecl_stmt) == NULL \n");
+            // DQ (3/6/2017): Added support for message logging to control output from ROSE tools.
+               mprintf ("Warning: TransformationSupport::getFile(vardecl_stmt) == NULL \n");
              }
 
        // For C we need to use the GNU 4.9 compiler.
@@ -6555,7 +6568,8 @@ Unparse_ExprStmt::unparseVarDeclStmt(SgStatement* stmt, SgUnparse_Info& info)
                   }
                  else
                   {
-                    printf ("Warning: TransformationSupport::getFile(vardecl_stmt) == NULL \n");
+                 // DQ (3/6/2017): Added support for message logging to control output from ROSE tools.
+                    mprintf ("Warning: TransformationSupport::getFile(vardecl_stmt) == NULL \n");
                   }
 #if 0
                printf ("In unparseVarDeclStmt(): is_C_Compiler = %s is_Cxx_Compiler = %s \n",is_C_Compiler ? "true" : "false",is_Cxx_Compiler ? "true" : "false");
@@ -8764,7 +8778,10 @@ Unparse_ExprStmt::unparseCaseStmt(SgStatement* stmt, SgUnparse_Info& info)
              {
                SgBasicBlock* basicBlock = isSgBasicBlock(case_body);
                ROSE_ASSERT(basicBlock != NULL);
-               SgStatementPtrList::iterator first = basicBlock->get_statements().begin();
+
+            // DQ (3/28/2017): Eliminate warning about unused variable from Clang.
+            // SgStatementPtrList::iterator first = basicBlock->get_statements().begin();
+
 #if 0
 #if 0
                printf ("Top of loop to find first non-transformation: *first = %p = %s \n",*first,(*first)->class_name().c_str());
@@ -10804,7 +10821,19 @@ Unparse_ExprStmt::unparseStaticAssertionDeclaration (SgStatement* stmt, SgUnpars
      SgStaticAssertionDeclaration* staticAssertionDeclaration = isSgStaticAssertionDeclaration(stmt);
      ROSE_ASSERT(staticAssertionDeclaration != NULL);
 
-     curprint("_Static_assert(");
+  // DQ (4/29/2017): This is the C11 syntax, and for C++11 we need the alternative syntax ("static_assert").
+  // curprint("_Static_assert(");
+     if (SageInterface::is_Cxx_language() == true)
+        {
+       // This must be C++11 (or later).
+          curprint("static_assert(");
+        }
+       else
+        {
+       // This must be C11 (or later).
+          curprint("_Static_assert(");
+        }
+
      unparseExpression(staticAssertionDeclaration->get_condition(), info);
      curprint(",\"");
   // unparseExpression(staticAssertionDeclaration->get_string_literal(), info);

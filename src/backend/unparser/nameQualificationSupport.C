@@ -946,7 +946,7 @@ NameQualificationTraversal::nameQualificationDepth ( SgDeclarationStatement* dec
        // Note that there can be more than one symbol if the name is hidden in a base class scope (and thus there are SgAliasSymbols using the same name).
           ROSE_ASSERT(currentScope != NULL);
 
-#if (DEBUG_NAME_QUALIFICATION_LEVEL > 3)
+#if (DEBUG_NAME_QUALIFICATION_LEVEL > 3) || 0
           printf ("Initial lookup: name = %s currentScope = %p = %s \n",name.str(),currentScope,currentScope->class_name().c_str());
 #endif
 
@@ -2968,7 +2968,8 @@ NameQualificationTraversal::traverseType ( SgType* type, SgNode* nodeReferenceTo
           SgDeclarationStatement* declaration = associatedDeclaration(type);
           if (declaration != NULL)
              {
-#if 0
+// #if 0
+#if (DEBUG_NAME_QUALIFICATION_LEVEL > 3)
                printf ("In NameQualificationTraversal::traverseType(): Calling evaluateTemplateInstantiationDeclaration(): declaration = %p = %s currentScope = %p = %s positionStatement = %p = %s \n",
                     declaration,declaration->class_name().c_str(),currentScope,currentScope->class_name().c_str(),positionStatement,positionStatement->class_name().c_str());
 #endif
@@ -3006,6 +3007,10 @@ NameQualificationTraversal::traverseType ( SgType* type, SgNode* nodeReferenceTo
 
        // DQ (8/19/2013): Added specification to skip class specifier (fixes problem with test2013_306.C).
           unparseInfoPointer->set_SkipClassSpecifier();
+
+#if (DEBUG_NAME_QUALIFICATION_LEVEL > 3) || 0
+          printf ("++++++++++++++++ Calling globalUnparseToString(): type = %p = %s \n",type,type->class_name().c_str());
+#endif
 
           string typeNameString = globalUnparseToString(type,unparseInfoPointer);
 
@@ -4877,8 +4882,9 @@ NameQualificationTraversal::evaluateInheritedAttribute(SgNode* n, NameQualificat
                   }
                  else
                   {
+                 // DQ (3/5/2017): Converted to use message logging.
                  // DQ (9/17/2011): Added this case, print a warning and fix thiat after debugging the constant folding value elimination..
-                    printf ("WARNING: SgFunctionRefExp name qualification not handled for the case of currentStatement == NULL \n");
+                    mprintf ("WARNING: SgFunctionRefExp name qualification not handled for the case of currentStatement == NULL \n");
                   }
              }
             else
@@ -5406,7 +5412,8 @@ NameQualificationTraversal::evaluateInheritedAttribute(SgNode* n, NameQualificat
                  // if (numberOfAliasSymbols > 1)
                     if (numberOfAliasSymbols > 1 && amountOfNameQualificationRequired == 0)
                        {
-                         printf ("WARNING: name qualification can be required when there are multiple base classes with the same referenced variable via SgAliasSymbol \n");
+                      // DQ (3/15/2017): Added support to use message streams.
+                         mprintf ("WARNING: name qualification can be required when there are multiple base classes with the same referenced variable via SgAliasSymbol \n");
                        }
                       else
                        {
@@ -5417,14 +5424,16 @@ NameQualificationTraversal::evaluateInheritedAttribute(SgNode* n, NameQualificat
                       // if (numberOfSymbolsWithSameName > 1 && amountOfNameQualificationRequired == 0)
                          if ((numberOfSymbolsWithSameName - numberOfAliasSymbols) > 1 && amountOfNameQualificationRequired == 0)
                             {
-                              printf ("WARNING: name qualification can be required when there are multiple base classes with the same referenced variable via SgVariableSymbol \n");
+                           // DQ (3/15/2017): Added support to use message streams.
+                              mprintf ("WARNING: name qualification can be required when there are multiple base classes with the same referenced variable via SgVariableSymbol \n");
                             }
                       // ROSE_ASSERT(numberOfSymbolsWithSameName < 2);
                       // if (numberOfSymbolsWithSameName >= 2 && amountOfNameQualificationRequired == 0)
                          if ((numberOfSymbolsWithSameName - numberOfAliasSymbols) > 1 && amountOfNameQualificationRequired == 0)
                             {
-                              printf ("   --- numberOfSymbolsWithSameName       = %d \n",numberOfSymbolsWithSameName);
-                              printf ("   --- amountOfNameQualificationRequired = %d \n",amountOfNameQualificationRequired);
+                           // DQ (3/15/2017): Added support to use message streams.
+                              mprintf ("   --- numberOfSymbolsWithSameName       = %d \n",numberOfSymbolsWithSameName);
+                              mprintf ("   --- amountOfNameQualificationRequired = %d \n",amountOfNameQualificationRequired);
                             }
                        // ROSE_ASSERT(numberOfSymbolsWithSameName < 2 || amountOfNameQualificationRequired > 0);
 
@@ -7855,7 +7864,9 @@ NameQualificationTraversal::setNameQualificationSupport(SgScopeStatement* scope,
                        {
                          if (classDefinition->get_declaration()->get_isUnNamed() == false)
                             {
+                           // DQ (4/11/2017): Klockworks reports that classDeclaration may be NULL, so make sure that adding an assertion will fix the issue.
                               SgClassDeclaration* classDeclaration = classDefinition->get_declaration();
+                              ROSE_ASSERT(classDeclaration != NULL);
                               printf ("Error: class should be marked as unnamed: classDeclaration = %p = %s \n",classDeclaration,classDeclaration->class_name().c_str());
                               printf ("   --- classDeclaration name = %s \n",classDeclaration->get_name().str());
                             }

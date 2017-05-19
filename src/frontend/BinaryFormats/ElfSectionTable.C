@@ -361,7 +361,6 @@ SgAsmElfSectionTable::add_section(SgAsmElfSection *section)
     return shdr;
 }
 
-/* Make this section's name to be stored in the specified string table. */
 void
 SgAsmElfSection::allocate_name_to_storage(SgAsmElfStringSection *strsec)
 {
@@ -516,7 +515,7 @@ SgAsmElfSectionTableEntry::to_string(SectionFlags val)
         case SHF_WRITE:     str += "WRITE";break;
         case SHF_ALLOC:     str += "ALLOC";break;
         case SHF_EXECINSTR: str +=  "CODE";break;
-        case SHF_MERGE:     str += "MERGE";break;/** Might be merged */
+        case SHF_MERGE:     str += "MERGE";break;/* Might be merged */
         case SHF_STRINGS:   str += "STRINGS";break;
         case SHF_INFO_LINK: str += "INFO_LINK";break;
         case SHF_LINK_ORDER:str += "LINK_ORDER";break;

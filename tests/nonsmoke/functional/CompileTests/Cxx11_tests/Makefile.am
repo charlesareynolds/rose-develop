@@ -5,7 +5,8 @@ include $(top_srcdir)/config/Makefile.for.ROSE.includes.and.libs
 # globalVariablesInLambdas_SOURCES = globalVariablesInLambdas.C
 
 AM_CPPFLAGS = $(ROSE_INCLUDES)
-LDADD    = $(LIBS_WITH_RPATH) $(ROSE_LIBS)
+AM_LDFLAGS = $(ROSE_RPATHS)
+LDADD    = $(ROSE_LIBS)
 
 
 
@@ -119,7 +120,11 @@ test2016_42.C \
 test2016_91.C \
 test2016_92.C \
 test2016_93.C \
+test2017_03.C \
 test2017_04.C \
+test2017_07.C \
+test2017_08.C \
+test2017_09.C \
 last.C
 
 # DQ (2/21/2017): This fails due to missing builtin functions (still to be addressed).
@@ -210,6 +215,7 @@ test2014_03.C \
 test2014_82.C \
 test2014_85.C \
 test2014_88.C \
+test2017_10.C \
 last.C
 
 # Note: last.C just simplifies the Makefile.am it
@@ -234,7 +240,8 @@ SKIP_UNPARSE_C_ASM_STATEMENTS = -rose:skip_unparse_asm_commands
 CXX11_OPTIONS = -rose:Cxx11 
 
 # DQ (5/8/2011): Adding -rose:skipfinalCompileStep so that we can test the new name qualification support that is not yet hooked up to the unparser.
-ROSE_FLAGS = $(CXX11_OPTIONS) --edg:no_warnings -w -rose:verbose 0 $(SKIP_UNPARSE_C_ASM_STATEMENTS)
+# ROSE_FLAGS = $(CXX11_OPTIONS) --edg:no_warnings -w -rose:verbose 0 $(SKIP_UNPARSE_C_ASM_STATEMENTS)
+ROSE_FLAGS = $(CXX11_OPTIONS) -rose:verbose 0 $(SKIP_UNPARSE_C_ASM_STATEMENTS)
 # ROSE_FLAGS = --edg:no_warnings -w -rose:verbose 0 -rose:skipfinalCompileStep $(SKIP_UNPARSE_C_ASM_STATEMENTS)
 
 TESTCODE_INCLUDES =
@@ -356,8 +363,8 @@ else # NOT USING_CLANG_COMPILER
 if USING_INTEL_COMPILER
 # Exclude this list of files in the case of Intel compiler.
 #	@echo "USING_INTEL_COMPILER == true"
-	@echo "C++11 tests using EDG 4.9 Intel backend compiler are allowed."
-	@$(MAKE) $(PASSING_TEST_Objects)
+	@echo "C++11 tests using EDG 4.9 Intel backend compiler are NOT allowed."
+#	@$(MAKE) $(PASSING_TEST_Objects)
 else # NOT USING_INTEL_COMPILER
 # This is an unknown compiler.
 #	@echo "USING_INTEL_COMPILER == false"
@@ -379,7 +386,7 @@ if USING_CLANG_COMPILER
 # Exclude this list of files in the case of CLANG compiler.
 	@echo "USING_CLANG_COMPILER == true"
 	@echo "C++11 tests using EDG 4.9: Clang backend compiler using EDG 4.12 frontend."
-# DQ (2/21/2017): Too many failing files due to building functions that are missing.
+# DQ (2/21/2017): Too many failing files due to builtin functions that are missing.
 #	@$(MAKE) $(PASSING_TEST_Objects)
 else # NOT USING_CLANG_COMPILER
 	@echo "USING_CLANG_COMPILER == false"
@@ -395,47 +402,10 @@ endif # USING_INTEL_COMPILER
 endif # USING_CLANG_COMPILER
 endif # USING_GNU_COMPILER
 endif # ROSE_USE_EDG_VERSION_4_9
-
-
-
-
-old_rule:
-# DQ (10/23/2016): We don't need this logic since we only use EDG 4.9 and later versions of EDG now.
-# if ROSE_USING_GCC_VERSION_LATER_4_8
-#	@echo "C++11 tests using GNU version 4.8 backend compiler."
-#	@$(MAKE) $(PASSING_TEST_Objects)
-# else
-if ROSE_USE_EDG_VERSION_4_9
-if ROSE_USING_GCC_VERSION_LATER_4_9
-	@echo "C++11 tests using EDG 4.9 and GNU version 4.9 backend compiler are disabled."
-else
-if USING_INTEL_COMPILER
-# DQ (1/24/2017): I think this should work.
-	@echo "C++11 tests using EDG 4.9 Intel backend compiler are allowed."
-	@$(MAKE) $(PASSING_TEST_Objects)
-else
-if USING_CLANG_COMPILER
-# DQ (2/18/2017): These tests will fail using the Clang header files (since they are borrowed from GNU 4.9).
-# DQ (1/24/2017): I think this should work.
-#	    @echo "C++11 tests using EDG 4.9 Clang backend compiler are allowed."
-#	    @$(MAKE) $(PASSING_TEST_Objects)
-	    @echo "C++11 tests using EDG 4.9 Clang backend compiler are NOT allowed with the EDG 4.9 frontend."
-else
-if ROSE_USING_GCC_VERSION_LATER_4_8
-	       @echo "C++11 tests using EDG 4.9 and GNU version 4.8 backend compiler are allowed."
-	       @$(MAKE) $(PASSING_TEST_Objects)
-endif
-endif
-endif
-endif
-else
-	@echo "C++11 tests require configuration with either EDG version 4.9 and GNU version 4.8 or backend compiler or EDG 4.12 and 4.8 or any later GNU compiler."
-	@echo "C++11 tests using EDG 4.12 and any supported backend compiler are allowed."
-	@$(MAKE) $(PASSING_TEST_Objects)
-endif
 	@echo "*********************************************************************************************************************"
 	@echo "****** ROSE/tests/nonsmoke/functional/CompileTests/Cxx11_tests: make check rule complete (terminated normally) ******"
 	@echo "*********************************************************************************************************************"
+
 
 clean-local:
 	rm -f a.out *.o rose_*.[cC] roseTestProgram.C *.dot
