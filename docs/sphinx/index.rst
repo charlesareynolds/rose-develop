@@ -5,6 +5,9 @@
 
 Welcome to ROSE's documentation!
 ================================
+Section 1
+---------
+This section was added by editing on github.
 
 .. toctree::
    :maxdepth: 2
