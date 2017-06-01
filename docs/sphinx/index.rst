@@ -9,6 +9,10 @@ Section 1
 ---------
 This section was added by editing on github.
 
+Section 2
+---------
+This section was added by editing locally and pushing to github.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
