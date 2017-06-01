@@ -3,22 +3,36 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to ROSE's documentation!
 ================================
-Section 1
----------
-This section was added by editing on github.
+ROSE Compiler Infrastructure
+================================
 
-Section 2
----------
-This section was added by editing locally and pushing to github.
+ROSE\@LLNL
+
+Making Compiler Technology Accessible
+
+Developed at Lawrence Livermore National Laboratory (LLNL), ROSE is an open source compiler infrastructure to build source-to-source program transformation and analysis tools for large-scale C (C89 and C98), C++ (C++98 and C++11), UPC, Fortran (77/95/2003), OpenMP, Java, Python and PHP applications. 
+
+Contents:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Basics
 
+   download
+   documentation
 
+.. toctree::
+   :maxdepth: 2
+   :caption: More Info
 
+   projects
+   publications
+   highlights
+   outreach
+   about
+
+==================
 Indices and tables
 ==================
 
