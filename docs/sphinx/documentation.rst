@@ -2,10 +2,10 @@
 Documentation
 ===================
 
------------
+---------------
 Getting Started
------------
-'Installation Guide (pdf) <http://rosecompiler.org/ROSE_InstallationInstructions.pdf>_'
+---------------
+`Installation Guide (pdf) <http://rosecompiler.org/ROSE_InstallationInstructions.pdf>`_
 
 Supported Rose Configurations
 
@@ -19,8 +19,8 @@ Development
 Community
 -----------
 
------------
+---------------------
 Project Documentation
------------
+---------------------
 
 
