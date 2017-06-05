@@ -11,7 +11,7 @@ ROSE\@LLNL
 
 Making Compiler Technology Accessible
 
-Developed at Lawrence Livermore National Laboratory (LLNL), ROSE is a really good open source compiler infrastructure to build source-to-source program transformation and analysis tools for large-scale C (C89 and C98), C++ (C++98 and C++11), UPC, Fortran (77/95/2003), OpenMP, Java, Python and PHP applications. 
+Developed at Lawrence Livermore National Laboratory (LLNL), ROSE is an open source compiler infrastructure to build source-to-source program transformation and analysis tools for large-scale C (C89 and C98), C++ (C++98 and C++11), UPC, Fortran (77/95/2003), OpenMP, Java, Python and PHP applications. 
 
 Contents:
 
