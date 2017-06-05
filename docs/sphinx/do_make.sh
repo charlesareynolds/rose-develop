@@ -22,5 +22,5 @@ module load py-sphinx-rtd-theme-0.2.5b1-gcc-4.7.1-di5iazc
 module load py-sphinxcontrib-websupport-1.0.1-gcc-4.7.1-5pq4k5m
 module load py-typing-3.6.1-gcc-4.7.1-uulsoye
 
-make html
-
+#make html
+python -msphinx -M html "." "_build"  
