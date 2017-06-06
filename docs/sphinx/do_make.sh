@@ -1,5 +1,15 @@
 #!/bin/bash
 
+set -o errexit
+
+if [ ${SPACK_ROOT:-not_set} = not_set ]
+then 
+  echo "Setting up spack..."
+  # Needed for module load of spack-installed modules to work:
+  export SPACK_ROOT=${HOME}/code/spack;
+  . ${SPACK_ROOT}/share/spack/setup-env.sh
+fi
+
 module load py-alabaster-0.7.10-gcc-4.7.1-hswcsfc
 module load py-appdirs-1.4.3-gcc-4.7.1-rmr2su6
 module load py-babel-2.4.0-gcc-4.7.1-p5vwpiu
